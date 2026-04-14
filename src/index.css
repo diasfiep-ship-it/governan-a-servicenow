@@ -1,0 +1,294 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design System Corporativo - ServiceNow Theme */
+
+@layer base {
+  :root {
+    /* ServiceNow Light Theme - Cores inspiradas no ServiceNow */
+    --background: 210 17% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ServiceNow Green como cor primária */
+    --primary: 156 62% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 222 47% 20%;
+
+    --muted: 210 17% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 203 89% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Cores de status */
+    --success: 156 62% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    --info: 203 89% 45%;
+    --info-foreground: 0 0% 100%;
+
+    /* GUT Colors */
+    --gut-1: 156 62% 40%;
+    --gut-2: 80 55% 45%;
+    --gut-3: 45 90% 50%;
+    --gut-4: 25 90% 50%;
+    --gut-5: 0 75% 50%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 156 62% 35%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar - ServiceNow Dark */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 156 62% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 18%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 222 40% 20%;
+    --sidebar-ring: 156 62% 45%;
+
+    /* Tabela */
+    --table-header: 222 47% 11%;
+    --table-header-foreground: 0 0% 100%;
+    --table-row-hover: 210 25% 96%;
+    --table-row-alt: 210 17% 98%;
+
+    /* Quick Win */
+    --quickwin: 156 62% 35%;
+  }
+
+  .dark {
+    /* ServiceNow Dark Theme */
+    --background: 222 47% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 222 47% 12%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 156 62% 45%;
+    --primary-foreground: 222 47% 8%;
+
+    --secondary: 222 40% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 222 40% 15%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 203 89% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 156 55% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 55%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 222 40% 20%;
+    --input: 222 40% 20%;
+    --ring: 156 62% 45%;
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 156 62% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 222 40% 15%;
+    --sidebar-ring: 156 62% 50%;
+
+    --table-header: 222 47% 15%;
+    --table-header-foreground: 210 20% 95%;
+    --table-row-hover: 222 40% 18%;
+    --table-row-alt: 222 47% 10%;
+
+    --quickwin: 156 62% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Scrollbar customizada */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full hover:bg-primary/50;
+  }
+}
+
+@layer components {
+  /* Badge de status */
+  .status-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap;
+  }
+
+  .status-aberto {
+    background-color: hsl(var(--warning) / 0.15);
+    color: hsl(var(--warning));
+    border: 1px solid hsl(var(--warning) / 0.3);
+  }
+
+  .status-priorizado {
+    background-color: hsl(var(--success) / 0.15);
+    color: hsl(var(--success));
+    border: 1px solid hsl(var(--success) / 0.3);
+  }
+
+  .status-fechado {
+    @apply bg-muted text-muted-foreground border border-border;
+  }
+
+  .status-aguardando-gut {
+    background-color: hsl(var(--info) / 0.15);
+    color: hsl(var(--info));
+    border: 1px solid hsl(var(--info) / 0.3);
+  }
+
+  .status-aguardando-esforco {
+    background-color: hsl(203 89% 45% / 0.15);
+    color: hsl(203 89% 45%);
+    border: 1px solid hsl(203 89% 45% / 0.3);
+  }
+
+  .status-aguardando-priorizacao {
+    background-color: hsl(38 92% 50% / 0.15);
+    color: hsl(38 70% 40%);
+    border: 1px solid hsl(38 92% 50% / 0.3);
+  }
+
+  .status-aguardando-sprint {
+    background-color: hsl(280 60% 50% / 0.15);
+    color: hsl(280 60% 45%);
+    border: 1px solid hsl(280 60% 50% / 0.3);
+  }
+
+  .status-pendencia-solicitante {
+    background-color: hsl(330 70% 50% / 0.15);
+    color: hsl(330 70% 45%);
+    border: 1px solid hsl(330 70% 50% / 0.3);
+  }
+
+  /* GUT score badges */
+  .gut-1 { @apply bg-gut-1 text-white; }
+  .gut-2 { @apply bg-gut-2 text-white; }
+  .gut-3 { @apply bg-gut-3 text-black; }
+  .gut-4 { @apply bg-gut-4 text-white; }
+  .gut-5 { @apply bg-gut-5 text-white; }
+
+  /* Tabela corporativa */
+  .table-corporate thead {
+    @apply bg-[hsl(var(--table-header))] text-[hsl(var(--table-header-foreground))];
+  }
+
+  .table-corporate tbody tr:nth-child(even) {
+    @apply bg-[hsl(var(--table-row-alt))];
+  }
+
+  .table-corporate tbody tr:hover {
+    @apply bg-[hsl(var(--table-row-hover))];
+  }
+
+  /* Card corporativo */
+  .card-corporate {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+  }
+
+  /* Input focus */
+  .input-corporate {
+    @apply border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all;
+  }
+
+  /* Quick Win badge */
+  .quickwin-badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium;
+    background-color: hsl(var(--quickwin) / 0.15);
+    color: hsl(var(--quickwin));
+    border: 1px solid hsl(var(--quickwin) / 0.3);
+  }
+
+  /* Selection circle */
+  .selection-circle {
+    @apply w-6 h-6 rounded-full border-2 border-border flex items-center justify-center transition-all cursor-pointer;
+  }
+
+  .selection-circle.selected {
+    @apply border-primary bg-primary;
+  }
+
+  .selection-circle:hover:not(.selected) {
+    @apply border-primary/50;
+  }
+}
+
+@layer utilities {
+  /* Animações */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Gradientes */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent;
+  }
+
+  .gradient-header {
+    @apply bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,40%,18%)];
+  }
+
+  /* Text capitalize helper */
+  .text-capitalize-first {
+    text-transform: lowercase;
+  }
+
+  .text-capitalize-first::first-letter {
+    text-transform: uppercase;
+  }
+}

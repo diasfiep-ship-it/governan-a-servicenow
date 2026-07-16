@@ -12,6 +12,7 @@ import { UsersTab } from '@/components/UsersTab';
 import { AreasTab } from '@/components/AreasTab';
 import UploadExcel from '@/components/UploadExcel';
 import ExportButton from '@/components/ExportButton';
+import ImportButton from '@/components/ImportButton';
 import { Loader2, LayoutGrid, Zap, Calendar, Users, FileCheck, Building2, XCircle, History, Clock } from 'lucide-react';
 import { isAdminRole, isEscritorioProcessos } from '@/types';
 import { useLastBaseUpdate } from '@/hooks/useLastBaseUpdate';
@@ -136,6 +137,7 @@ export default function Index() {
                   <div className="flex gap-2 w-full sm:w-auto">
                     <UploadExcel />
                     <ExportButton />
+                    <ImportButton />
                   </div>
                 )}
                 {lastUpdate && (

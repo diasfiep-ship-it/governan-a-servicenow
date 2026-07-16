@@ -27,11 +27,27 @@ export default function ImportButton() {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed)) {
-        toast.error('Arquivo inválido: esperado um array de chamados.');
+
+      // Aceita tanto array direto quanto o formato de backup completo
+      // { export_version, exported_at, chamados: [...] }
+      let records: Record<string, unknown>[] | null = null;
+      if (Array.isArray(parsed)) {
+        records = parsed as Record<string, unknown>[];
+      } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { chamados?: unknown }).chamados)) {
+        records = (parsed as { chamados: Record<string, unknown>[] }).chamados;
+      }
+
+      if (!records) {
+        toast.error('Arquivo inválido: esperado o JSON gerado pelo botão Exportar Base.');
         return;
       }
-      setPendingData(parsed as Record<string, unknown>[]);
+
+      if (records.length === 0) {
+        toast.error('O arquivo não contém chamados.');
+        return;
+      }
+
+      setPendingData(records);
       setConfirmOpen(true);
     } catch (err) {
       console.error('Parse error:', err);

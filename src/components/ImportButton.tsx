@@ -63,18 +63,33 @@ export default function ImportButton() {
     setConfirmOpen(false);
 
     try {
-      const batchSize = 200;
-      let inserted = 0;
+      const batchSize = 100;
+      let processed = 0;
       for (let i = 0; i < pendingData.length; i += batchSize) {
         const batch = pendingData.slice(i, i + batchSize);
         const { error } = await supabase
           .from('chamados')
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .upsert(batch as any, { onConflict: 'id' });
-        if (error) throw error;
-        inserted += batch.length;
+        if (error) {
+          // Log full error diagnostics
+          console.error('Import error (batch starting at index ' + i + '):', {
+            message: error.message,
+            details: (error as { details?: string }).details,
+            hint: (error as { hint?: string }).hint,
+            code: (error as { code?: string }).code,
+            firstRecord: batch[0],
+          });
+          const parts = [
+            error.message,
+            (error as { details?: string }).details,
+            (error as { hint?: string }).hint,
+          ].filter(Boolean);
+          throw new Error(parts.join(' | ') || 'Erro desconhecido');
+        }
+        processed += batch.length;
       }
-      toast.success(`Base importada com sucesso! (${inserted} chamados)`);
+      toast.success(`Base importada com sucesso! (${processed} chamados)`);
     } catch (err) {
       console.error('Import error:', err);
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';

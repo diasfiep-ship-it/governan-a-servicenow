@@ -63,18 +63,55 @@ export default function ImportButton() {
     setConfirmOpen(false);
 
     try {
-      const batchSize = 200;
-      let inserted = 0;
-      for (let i = 0; i < pendingData.length; i += batchSize) {
-        const batch = pendingData.slice(i, i + batchSize);
+      // Colunas atuais da tabela chamados — descarta campos extras do arquivo
+      // (ex.: exports antigos podem conter colunas que já não existem)
+      const ALLOWED_COLUMNS = new Set([
+        'id', 'numero', 'area_demandante', 'cliente', 'descricao', 'area', 'status',
+        'item', 'oferta', 'sla', 'estado', 'data_abertura', 'catalogo', 'grupo_atribuicao',
+        'data_resolvido', 'data_fechamento', 'data_encerramento', 'data_previsto',
+        'gravidade', 'urgencia', 'tendencia', 'esforco', 'prioridade_calculada',
+        'selecionado_mes', 'mes_priorizacao', 'created_at', 'updated_at', 'sprint_id',
+        'data_conclusao', 'pontuacao_gut', 'area_modificada_por_admin', 'status_anterior',
+        'cancelado', 'motivo_cancelamento', 'evidencia_cancelamento_url', 'cancelado_em',
+        'cancelado_por', 'contagem_reabertura', 'aguardando_cliente', 'motivo_pendencia',
+        'encerrado_por', 'atribuido_a', 'comentarios', 'oculto', 'spec_ativo',
+        'spec_inicio', 'spec_dias_acumulados',
+      ]);
+
+      const sanitized = pendingData.map((row) => {
+        const clean: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(row)) {
+          if (ALLOWED_COLUMNS.has(k)) clean[k] = v;
+        }
+        return clean;
+      });
+
+      const batchSize = 100;
+      let processed = 0;
+      for (let i = 0; i < sanitized.length; i += batchSize) {
+        const batch = sanitized.slice(i, i + batchSize);
         const { error } = await supabase
           .from('chamados')
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .upsert(batch as any, { onConflict: 'id' });
-        if (error) throw error;
-        inserted += batch.length;
+        if (error) {
+          console.error('Import error (batch starting at index ' + i + '):', {
+            message: error.message,
+            details: (error as { details?: string }).details,
+            hint: (error as { hint?: string }).hint,
+            code: (error as { code?: string }).code,
+            firstRecord: batch[0],
+          });
+          const parts = [
+            error.message,
+            (error as { details?: string }).details,
+            (error as { hint?: string }).hint,
+          ].filter(Boolean);
+          throw new Error(parts.join(' | ') || 'Erro desconhecido');
+        }
+        processed += batch.length;
       }
-      toast.success(`Base importada com sucesso! (${inserted} chamados)`);
+      toast.success(`Base importada com sucesso! (${processed} chamados)`);
     } catch (err) {
       console.error('Import error:', err);
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';

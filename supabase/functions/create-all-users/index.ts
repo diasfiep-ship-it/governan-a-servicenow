@@ -26,15 +26,20 @@ const USERS_TO_CREATE = [
 ]
 
 function generateEmail(login: string): string {
-  // Convert login to email-safe format
   const emailPrefix = login
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/[^a-z0-9]/g, '.') // Replace non-alphanumeric with dots
-    .replace(/\.+/g, '.') // Replace multiple dots with single
-    .replace(/^\.|\.$/, '') // Remove leading/trailing dots
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '.')
+    .replace(/\.+/g, '.')
+    .replace(/^\.|\.$/, '')
   return `${emailPrefix}@sistema.com`
+}
+
+function generateStrongPassword(): string {
+  const bytes = new Uint8Array(24)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 Deno.serve(async (req) => {
@@ -43,54 +48,106 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
+    // Require an authenticated caller who already has the ADM role
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    const results = []
-    const defaultPassword = '123'
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token)
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const callerId = claimsData.claims.sub as string
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    const { data: callerRoles, error: rolesErr } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerId)
+
+    if (rolesErr) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify caller role' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    if (!(callerRoles ?? []).some((r) => r.role === 'ADM')) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: ADM role required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const results: Array<Record<string, unknown>> = []
+
+    // Fetch existing users once
+    const { data: existingList } = await supabaseAdmin.auth.admin.listUsers()
 
     for (const userDef of USERS_TO_CREATE) {
       const email = generateEmail(userDef.login)
-      console.log(`Creating user: ${userDef.login} with email: ${email}`)
-
-      // Check if user already exists
-      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-      const userExists = existingUser?.users.some(u => u.email === email)
+      const userExists = existingList?.users.some((u) => u.email === email)
 
       if (userExists) {
         results.push({ login: userDef.login, email, status: 'already_exists' })
         continue
       }
 
-      // Create user
+      const generatedPassword = generateStrongPassword()
+
       const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: defaultPassword,
+        password: generatedPassword,
         email_confirm: true,
-        user_metadata: { full_name: userDef.login }
+        user_metadata: { full_name: userDef.login },
       })
 
       if (createError) {
-        console.error(`Error creating user ${userDef.login}:`, createError)
         results.push({ login: userDef.login, email, status: 'error', error: createError.message })
         continue
       }
 
-      // Assign role
+      // Force password change on first login (profile is created by handle_new_user trigger)
+      await supabaseAdmin
+        .from('profiles')
+        .update({ must_change_password: true })
+        .eq('id', userData.user.id)
+
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
         .insert({ user_id: userData.user.id, role: userDef.role })
 
       if (roleError) {
-        console.error(`Error assigning role to ${userDef.login}:`, roleError)
         results.push({ login: userDef.login, email, status: 'error_role', error: roleError.message })
         continue
       }
 
-      results.push({ login: userDef.login, email, status: 'created', userId: userData.user.id })
+      // Return the generated one-time password to the admin caller so they can share it securely
+      results.push({
+        login: userDef.login,
+        email,
+        status: 'created',
+        userId: userData.user.id,
+        temporary_password: generatedPassword,
+      })
     }
 
     return new Response(
@@ -99,7 +156,6 @@ Deno.serve(async (req) => {
     )
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Error:', message)
     return new Response(
       JSON.stringify({ error: message }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

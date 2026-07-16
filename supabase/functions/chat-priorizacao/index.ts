@@ -61,6 +61,33 @@ serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller on ALL code paths
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authorization header required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrlEnv = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKeyEnv = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrlEnv || !supabaseAnonKeyEnv) {
+      throw new Error("Backend env vars not configured");
+    }
+    const authClient = createClient(supabaseUrlEnv, supabaseAnonKeyEnv, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { messages, chamadosContext, userRoles, isAdmin } = await req.json() as {
       messages: Message[];
       chamadosContext: ChamadoContext[];
